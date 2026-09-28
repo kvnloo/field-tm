@@ -321,6 +321,30 @@ async def test_convert_odk_submission_json_to_geojson_success(client):
     assert feature["properties"]["status"] == "complete"
 
 
+async def test_convert_odk_submission_json_to_geojson_missing_optional_metadata(client):
+    """ODK submission JSON may omit Central-specific metadata keys."""
+    submission = [
+        {
+            "xlocation": "27.7108923499 85.2999891100 0.0 0.0",
+            "status": "complete",
+        }
+    ]
+    response = await client.post(
+        f"{HELPERS_PREFIX}/convert-odk-submission-json-to-geojson",
+        files={
+            "data": (
+                "submissions.json",
+                json.dumps(submission).encode("utf-8"),
+                "application/json",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    geojson = json.loads(response.content)
+    assert geojson["features"][0]["properties"]["status"] == "complete"
+
+
 async def test_convert_odk_submission_json_to_geojson_invalid_extension(client):
     """A non-JSON file extension should be rejected."""
     response = await client.post(
