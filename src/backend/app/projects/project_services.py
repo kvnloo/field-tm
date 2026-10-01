@@ -897,9 +897,10 @@ async def save_data_extract(
         project_id,
         project_schemas.ProjectUpdate(
             data_extract_geojson=geojson_data,
-            # Reset split status when a new extract is accepted.
-            task_areas_geojson=None,
         ),
+        # Reset split status when a new extract is accepted. This must be a
+        # real SQL NULL; an empty object means "no splitting" elsewhere.
+        fields_to_null={"task_areas_geojson"},
     )
     await db.commit()
 
