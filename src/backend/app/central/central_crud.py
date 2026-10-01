@@ -583,7 +583,7 @@ async def convert_odk_submission_json_to_geojson(
         # Remove unnecessary keys
         keys_to_remove = ["meta", "__id", "__system"]
         for key in keys_to_remove:
-            submission.pop(key)
+            submission.pop(key, None)
 
         # Ensure no nesting of the properties (flat struct)
         data = {}
