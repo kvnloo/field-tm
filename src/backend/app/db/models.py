@@ -662,9 +662,17 @@ class DbProject:
         db: AsyncConnection,
         project_id: int,
         project_update: Self,
+        fields_to_null: Optional[set[str]] = None,
     ) -> Self:
-        """Update values for project."""
+        """Update values for project, optionally writing explicit SQL NULL values."""
         model_dump = dump_and_check_model(project_update)
+        if fields_to_null:
+            invalid_fields = fields_to_null.difference(cls.__dataclass_fields__)
+            if invalid_fields:
+                raise ValueError(
+                    f"Unknown project field(s) requested for NULL update: {sorted(invalid_fields)}"
+                )
+            model_dump.update({field: None for field in fields_to_null})
         _add_encrypted_odk_credentials(project_update, model_dump)
         _normalize_project_jsonb_fields(model_dump)
         placeholders = _project_update_placeholders(model_dump)
