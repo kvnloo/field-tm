@@ -7,6 +7,7 @@ from app.i18n import (
     RTL_LOCALES,
     SUPPORTED_LOCALES,
     _current_locale,
+    create_locale_cookie_middleware,
     get_current_dir,
     get_preferred_locale,
     resolve_locale,
@@ -88,3 +89,35 @@ def test_rtl_locales_are_subset_of_supported():
         assert locale in SUPPORTED_LOCALES, (
             f"{locale} is RTL but not in SUPPORTED_LOCALES"
         )
+
+
+async def test_locale_cookie_persists_normalized_query_locale():
+    """Cookie middleware should persist the same normalized locale the page renders."""
+    sent = []
+
+    async def app(scope, receive, send):
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b""})
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        sent.append(message)
+
+    middleware = create_locale_cookie_middleware(app)
+    await middleware(
+        {"type": "http", "query_string": b"lang=PT-BR"},
+        receive,
+        send,
+    )
+
+    response_start = next(
+        message for message in sent if message["type"] == "http.response.start"
+    )
+    cookie_headers = [
+        value.decode("latin-1")
+        for name, value in response_start["headers"]
+        if name == b"set-cookie"
+    ]
+    assert any("ftm_locale=pt_br" in header for header in cookie_headers)

@@ -240,14 +240,15 @@ def create_locale_cookie_middleware(app: ASGIApp) -> ASGIApp:
         params = parse_qs(qs)
         lang_values = params.get("lang", [])
         lang = lang_values[0] if lang_values else None
+        matched_lang = match_supported_locale(lang) if lang else None
 
-        if not lang or lang not in SUPPORTED_LOCALES:
+        if not matched_lang:
             await app(scope, receive, send)
             return
 
-        # Inject Set-Cookie header into the response
+        # Persist the same normalized/fallback locale used by resolve_locale().
         cookie: SimpleCookie = SimpleCookie()
-        cookie["ftm_locale"] = lang
+        cookie["ftm_locale"] = matched_lang
         cookie["ftm_locale"]["path"] = "/"
         cookie["ftm_locale"]["max-age"] = str(365 * 24 * 3600)
         cookie["ftm_locale"]["samesite"] = "Lax"
